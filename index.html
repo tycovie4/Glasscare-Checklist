@@ -1,160 +1,204 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Glazing Technician Master Checklist</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: #f7f9fb;
-    }
-    .card {
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.06);
-    }
-    input[type="checkbox"] { width: 1.25rem; height: 1.25rem; border-radius: 0.25rem; border: 2px solid #3b82f6; }
-    input[type="checkbox"]:checked {
-      background-color: #3b82f6;
-      border-color: #3b82f6;
-      background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
-      background-size: 100% 100%;
-      background-position: center;
-      background-repeat: no-repeat;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glazing Technician Master Checklist</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+        .checklist-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+        .card {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+        }
+        input[type="checkbox"] {
+            /* Custom checkbox styling */
+            width: 1.25rem;
+            height: 1.25rem;
+            border-radius: 0.25rem;
+            border: 2px solid #3b82f6;
+            background-color: #ffffff;
+            cursor: pointer;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        input[type="checkbox"]:checked {
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+            background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
+            background-size: 100% 100%;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        /* Style for the reset button */
+        #reset-button {
+            transition: background-color 0.15s ease-in-out;
+        }
+        #reset-button:hover {
+            background-color: #ef4444; /* red-500 */
+        }
+    </style>
 </head>
 <body>
-  <div class="max-w-2xl mx-auto p-4">
-    <header class="card bg-white rounded-lg p-6 mb-6 text-center">
-      <h1 class="text-3xl font-bold text-blue-700">Glazing Tech Master Checklist</h1>
-      <p id="user-status" class="text-sm text-gray-500 mt-1">Status: Offline</p>
-      <div id="loading" class="mt-2 text-blue-500 hidden">Loading…</div>
-    </header>
 
-    <main id="checklist-root" class="space-y-6"></main>
+    <div class="checklist-container">
+        <header class="text-center py-6 bg-white rounded-lg mb-6 card">
+            <h1 class="text-3xl font-bold text-blue-700">Glazing Tech Master Checklist</h1>
+            <p id="user-info" class="text-sm text-gray-500 mt-1">Status: Ready (Local Save)</p>
+            <button id="reset-button" class="mt-3 px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75">
+                Reset Checklist
+            </button>
+        </header>
 
-    <footer class="text-center py-4 text-gray-500 text-sm mt-6">
-      Job ID: <span id="job-id" class="bg-gray-200 px-2 py-1 rounded font-mono text-xs">-</span><br>
-      <span class="text-xs">Real-time updates saved in Firestore.</span>
-    </footer>
-  </div>
+        <div id="checklist-renderer" class="space-y-6">
+            <!-- Checklist will be rendered here -->
+        </div>
 
-  <script type="module">
-    // ------ CONFIGURE FIREBASE HERE ------
-    onst firebaseConfig = { // apiKey: "AIzaSyCIGmk3O--y3XaMrD-ZzkhZ-d9WD9ta-6k", authDomain: "glasscare-checklist.firebaseapp.com", projectId: "glasscare-checklist", storageBucket: "glasscare-checklist.firebasestorage.app", messagingSenderId: "959017527739", appId: "1:959017527739:web:a3c64dc09af4536ed6bc9e" };
-    // -------------------------------------
+        <footer class="text-center py-4 text-gray-500 text-sm mt-6">
+            <p>Data saved instantly in your browser (Local Storage).</p>
+        </footer>
+    </div>
 
+    <script>
+        // Use a static key for Local Storage
+        const STORAGE_KEY = 'glazingChecklistStatus';
 
-    // Checklist Template
-    const CHECKLIST = [
-      { id: 'prep', title: "I. Prep Day: Material Gathering & Inspection", items: [
-        { id: 'p1', text: "Pick up necessary materials from vendors" },
-        { id: 'p2', text: "Inspect all finish components (sweeps, seals, caulk)" }
-      ]},
-      { id: 'docs', title: "II. On-Site Documentation & Materials Check", items: [
-        { id: 'd1', text: "Approved Shop Drawings (latest revision)" },
-        { id: 'd2', text: "Check Hardware List (all fittings confirmed)" }
-      ]},
-      { id: 'photos', title: "III. Completion & Photo Evidence", items: [
-        { id: 'ph1', text: "Take 'before' pictures of opening" },
-        { id: 'ph2', text: "Take 'after' pictures of finished work" }
-      ]},
-      { id: 'handover', title: "IV. Client Handover & Acceptance", items: [
-        { id: 'h1', text: "Client Walkthrough & Demonstration" },
-        { id: 'h2', text: "Client Sign-Off on Acceptance Form" }
-      ]}
-    ];
+        // Checklist structure (template)
+        const CHECKLIST_TEMPLATE = [
+            {
+                id: 'prep-0', title: "I. Prep Day: Material Gathering & Inspection", items: [
+                    { id: 'p0-1', name: "Pickup necessary materials from vendors" },
+                    { id: 'p0-2', name: "Check miscellaneous finish items (sweeps, seals, caulk)" }
+                ]
+            },
+            {
+                id: 'doc-1', title: "II. On-Site Documentation & Core Materials Check", items: [
+                    { id: 'd1-1', name: "Approved Shop Drawings (latest revision)" },
+                    { id: 'd1-2', name: "Hardware List (all fittings confirmed)" }
+                ]
+            },
+            {
+                id: 'photo-2', title: "III. Installation Completion & Photo Evidence", items: [
+                    { id: 'p2-1', name: "Before Pictures taken of the opening" },
+                    { id: 'p2-2', name: "After Pictures taken of the finished work" }
+                ]
+            },
+            {
+                id: 'close-3', title: "IV. Client Handover & Acceptance", items: [
+                    { id: 'c3-1', name: "Client Walkthrough & Demonstration" },
+                    { id: 'c3-2', name: "Client Sign-Off on Acceptance Form" }
+                ]
+            }
+        ];
+        
+        // --- LOCAL STORAGE OPERATIONS ---
 
-    // Static Job ID (change for each install)
-    const JOB_ID = 'job-2025-11-04-partition-install';
+        function loadChecklistStatus() {
+            try {
+                const storedData = localStorage.getItem(STORAGE_KEY);
+                return storedData ? JSON.parse(storedData) : {};
+            } catch (e) {
+                console.error("Error loading status from Local Storage:", e);
+                return {};
+            }
+        }
 
-    // ---- FIREBASE (v11+) ----
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        function saveChecklistStatus(status) {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(status));
+            } catch (e) {
+                console.error("Error saving status to Local Storage:", e);
+            }
+        }
+        
+        function updateChecklistItem(itemId, isChecked) {
+            const status = loadChecklistStatus();
+            if (isChecked) {
+                status[itemId] = true;
+            } else {
+                delete status[itemId];
+            }
+            saveChecklistStatus(status);
+        }
 
-    let db, docRef, ready = false;
-    const userStatus = document.getElementById('user-status');
-    const jobIdDisplay = document.getElementById('job-id');
-    jobIdDisplay.textContent = JOB_ID;
+        function resetChecklist() {
+            const confirmation = window.confirm("Are you sure you want to reset the checklist? All saved progress will be lost.");
+            if (confirmation) {
+                localStorage.removeItem(STORAGE_KEY);
+                renderChecklist({}); // Re-render with empty status
+            }
+        }
+        
+        // --- UI RENDERING ---
 
-    function showLoading(show) {
-      document.getElementById('loading').classList.toggle('hidden', !show);
-    }
+        function renderChecklist(savedStatus) {
+            const container = document.getElementById('checklist-renderer');
+            container.innerHTML = ''; // Clear existing content
 
-    // Init Firebase if config is present
-    if (firebaseConfig?.projectId && firebaseConfig?.apiKey) {
-      try {
-        const app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-        docRef = doc(db, 'glazing_checklists', JOB_ID);
-        ready = true;
-        userStatus.textContent = "Status: Online (Firestore connected)";
-        showLoading(true);
+            CHECKLIST_TEMPLATE.forEach(section => {
+                const sectionEl = document.createElement('div');
+                sectionEl.className = 'card bg-white p-5 rounded-xl mb-6';
+                sectionEl.innerHTML = `<h2 class="text-xl font-bold text-gray-800 border-b pb-2 mb-4">${section.title}</h2>`;
 
-        // Listen for changes
-        onSnapshot(docRef, (snapshot) => {
-          showLoading(false);
-          const status = snapshot.exists() ? snapshot.data().status || {} : {};
-          renderChecklist(status);
-        }, err => {
-          userStatus.textContent = "Status: Error connecting to Firestore";
-          console.error(err);
+                const ul = document.createElement('ul');
+                ul.className = 'space-y-3';
+
+                section.items.forEach(item => {
+                    const listItem = document.createElement('li');
+                    listItem.className = 'flex items-center justify-between p-2 rounded-lg transition duration-150 ease-in-out hover:bg-blue-50';
+
+                    const isChecked = !!savedStatus[item.id];
+                    
+                    listItem.innerHTML = `
+                        <label for="${item.id}" class="flex items-center w-full cursor-pointer">
+                            <input type="checkbox" id="${item.id}" ${isChecked ? 'checked' : ''} class="mr-4 flex-shrink-0">
+                            <span class="text-gray-700 text-sm md:text-base ${isChecked ? 'line-through text-gray-500' : ''}">${item.name}</span>
+                        </label>
+                    `;
+                    
+                    const checkbox = listItem.querySelector(`#${item.id}`);
+                    
+                    // Attach event listener
+                    checkbox.addEventListener('change', (e) => {
+                        const isChecked = e.target.checked;
+                        const textSpan = listItem.querySelector('span');
+                        
+                        // Update visual state
+                        if (isChecked) {
+                            textSpan.classList.add('line-through', 'text-gray-500');
+                        } else {
+                            textSpan.classList.remove('line-through', 'text-gray-500');
+                        }
+                        
+                        // Update local storage
+                        updateChecklistItem(item.id, isChecked);
+                    });
+
+                    ul.appendChild(listItem);
+                });
+
+                sectionEl.appendChild(ul);
+                container.appendChild(sectionEl);
+            });
+        }
+        
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const initialStatus = loadChecklistStatus();
+            renderChecklist(initialStatus);
+            
+            // Attach reset button listener (using window.confirm since it's a local app)
+            document.getElementById('reset-button').addEventListener('click', resetChecklist);
         });
-      } catch (err) {
-        userStatus.textContent = "Status: Firebase config error";
-        console.error(err);
-      }
-    } else {
-      userStatus.textContent = "Status: Offline (No Firebase config)";
-    }
-
-    // Render checklist UI
-    function renderChecklist(status = {}) {
-      const root = document.getElementById('checklist-root');
-      root.innerHTML = "";
-      CHECKLIST.forEach(section => {
-        const sectionDiv = document.createElement('div');
-        sectionDiv.className = 'card bg-white p-5 rounded-xl';
-        sectionDiv.innerHTML = `<h2 class="text-lg font-semibold mb-3 border-b">${section.title}</h2>`;
-        const ul = document.createElement('ul'); ul.className = 'space-y-2';
-        section.items.forEach(item => {
-          const li = document.createElement('li');
-          li.className = 'flex items-center justify-between p-2 rounded hover:bg-blue-50';
-          const checked = !!status[item.id];
-          li.innerHTML = `
-            <label class="flex items-center cursor-pointer w-full" for="cb-${item.id}">
-              <input type="checkbox" id="cb-${item.id}" class="mr-3" ${checked ? 'checked' : ''}/>
-              <span class="${checked ? 'line-through text-gray-500' : 'text-gray-700'}">${item.text}</span>
-            </label>`;
-          // Checkbox event
-          li.querySelector('input').addEventListener('change', e => {
-            li.querySelector('span').className = e.target.checked
-              ? 'line-through text-gray-500'
-              : 'text-gray-700';
-            saveStatus(item.id, e.target.checked);
-          });
-          ul.appendChild(li);
-        });
-        sectionDiv.appendChild(ul);
-        root.appendChild(sectionDiv);
-      });
-    }
-
-    // Save a single item status
-    async function saveStatus(itemId, value) {
-      if (!ready || !db || !docRef) return;
-      try {
-        await setDoc(docRef, { status: { [itemId]: value } }, { merge: true });
-      } catch (err) {
-        alert("Error saving data.");
-        console.error(err);
-      }
-    }
-
-    // Initial render (empty status while loading)
-    renderChecklist({});
-  </script>
+    </script>
 </body>
 </html>

@@ -70,7 +70,7 @@
         const firebaseConfig = { // apiKey: "AIzaSyCIGmk3O--y3XaMrD-ZzkhZ-d9WD9ta-6k", authDomain: "glasscare-checklist.firebaseapp.com", projectId: "glasscare-checklist", storageBucket: "glasscare-checklist.firebasestorage.app", messagingSenderId: "959017527739", appId: "1:959017527739:web:a3c64dc09af4536ed6bc9e" };
         
         // --- GLOBAL VARIABLES & CONFIG ---
-        const isExternalHost = (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY_GOES_HERE");
+        const isExternalHost = (firebaseConfig.apiKey && firebaseConfig.apiKey !== "AIzaSyCIGmk3O--y3XaMrD-ZzkhZ-d9WD9ta-6k    ");
         const isCanvasHost = typeof __firebase_config !== 'undefined' && Object.keys(JSON.parse(__firebase_config)).length > 0;
 
         let finalConfig = {};
@@ -256,3 +256,4 @@
     </script>
 </body>
 </html>
+

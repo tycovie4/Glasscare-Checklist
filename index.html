@@ -62,19 +62,14 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        // REMOVED getAuth and signInAnonymously import
         import { getFirestore, doc, onSnapshot, setDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // --- IMPORTANT: CONFIGURE FIREBASE HERE ---
-        // 1. You must replace the placeholder values below with your actual Firebase project configuration 
-        //    if you want to use data persistence on your own website.
-        // 2. We use standard signInAnonymously() when running externally.
 
         const firebaseConfig = { // apiKey: "AIzaSyCIGmk3O--y3XaMrD-ZzkhZ-d9WD9ta-6k", authDomain: "glasscare-checklist.firebaseapp.com", projectId: "glasscare-checklist", storageBucket: "glasscare-checklist.firebasestorage.app", messagingSenderId: "959017527739", appId: "1:959017527739:web:a3c64dc09af4536ed6bc9e" };
         
         // --- GLOBAL VARIABLES & CONFIG ---
-        // Check for placeholder values to determine the environment status
-        // isExternalHost will be true if you've replaced the placeholder keys.
         const isExternalHost = (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY_GOES_HERE");
         const isCanvasHost = typeof __firebase_config !== 'undefined' && Object.keys(JSON.parse(__firebase_config)).length > 0;
 
@@ -82,23 +77,20 @@
         let finalAppId = 'default-app-id';
 
         if (isCanvasHost) {
-            // Running in the canvas environment
             finalConfig = JSON.parse(__firebase_config);
             finalAppId = typeof __app_id !== 'undefined' ? __app_id : finalConfig.projectId;
         } else if (isExternalHost) {
-            // Running on GitHub Pages or other external host with provided config
             finalConfig = firebaseConfig;
             finalAppId = firebaseConfig.projectId;
         } else {
-            // Configuration is missing/placeholder in both environments
             console.warn("Firebase configuration is missing. Data saving will be disabled.");
             document.getElementById('user-info').textContent = "Status: OFFLINE (No data saving)";
         }
         
         let db;
-        let auth;
-        let userId = null;
-        let isAuthReady = false;
+        // Removed auth
+        let userId = 'single-static-user-id'; // HARDCODED for non-auth simplicity
+        let isReadyToSave = false;
 
         // Use a static ID for the single checklist document (Job ID)
         const JOB_ID = 'job-2025-09-15-partition-install';
@@ -131,81 +123,45 @@
             }
         ];
         
-        // --- FIREBASE INITIALIZATION & AUTH ---
+        // --- FIREBASE INITIALIZATION ---
+        
+        const startFirebaseConnection = () => {
+            setLogLevel('Debug');
+            
+            try {
+                const app = initializeApp(finalConfig);
+                db = getFirestore(app);
+                
+                document.getElementById('job-id-display').textContent = JOB_ID;
+                document.getElementById('user-info').textContent = `User ID: ${userId} | Status: Ready (Simple Mode)`;
+                isReadyToSave = true; // Set flag to allow saving
+                startChecklistListener();
+            } catch (error) {
+                console.error("Firebase Connection Error:", error);
+                document.getElementById('user-info').textContent = `Status: FAILED (Check keys and console)`;
+            }
+        };
+
 
         if (Object.keys(finalConfig).length > 0) {
-            
-            setLogLevel('Debug'); // Set Firebase logging level to Debug for visibility
-            
-            const app = initializeApp(finalConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-
-            document.getElementById('job-id-display').textContent = JOB_ID;
-            document.getElementById('user-info').textContent = "Authenticating...";
-
-            if (isCanvasHost) {
-                // Canvas Host Logic (Using custom token or anonymous fallback)
-                const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-                import { signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-                
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        isAuthReady = true;
-                        document.getElementById('user-info').textContent = `User ID: ${userId} | Status: Ready (Canvas)`;
-                        startChecklistListener();
-                    } else {
-                        try {
-                            if (initialAuthToken) {
-                                await signInWithCustomToken(auth, initialAuthToken);
-                            } else {
-                                await signInAnonymously(auth);
-                                userId = auth.currentUser.uid;
-                            }
-                        } catch (error) {
-                            console.error("Auth Error:", error);
-                            document.getElementById('user-info').textContent = `Auth failed. Check console.`;
-                        }
-                    }
-                });
-
-            } else if (isExternalHost) {
-                // External Host Logic (Only uses Anonymous sign-in)
-                signInAnonymously(auth)
-                    .then(() => {
-                        userId = auth.currentUser.uid;
-                        isAuthReady = true;
-                        document.getElementById('user-info').textContent = `User ID: ${userId} | Status: Ready (External)`;
-                        startChecklistListener();
-                    })
-                    .catch((error) => {
-                        console.error("Auth Error (External Firebase):", error);
-                        document.getElementById('user-info').textContent = `Auth Failed. Check console.`;
-                    });
-            }
-
-        } else {
-            // Fallback for when no config is available (load UI, disable saving)
-            document.getElementById('job-id-display').textContent = JOB_ID;
-            renderChecklist({}); // Render empty checklist state
+            startFirebaseConnection();
         }
-
+        
+        // --- UI RENDERING (ALWAYS RUNS) ---
+        renderChecklist({});
+        
 
         // --- FIREBASE OPERATIONS ---
 
         const getChecklistDocRef = () => {
-            if (!userId) {
-                console.error("User ID not available.");
-                return null;
-            }
-            // Use the private path for this user: /artifacts/{appId}/users/{userId}/glazing_checklists/{JOB_ID}
-            return doc(db, 'artifacts', finalAppId, 'users', userId, 'glazing_checklists', JOB_ID);
+            // Updated path to use a non-user-specific location for simple mode: /artifacts/{appId}/public/data/glazing_checklists/{JOB_ID}
+            // NOTE: We are intentionally using the public path here to bypass security rules associated with authenticated users.
+            return doc(db, 'artifacts', finalAppId, 'public', 'data', 'glazing_checklists', JOB_ID);
         };
 
         async function updateChecklistItem(itemId, isChecked) {
-            if (!isAuthReady || !db) {
-                console.warn("Cannot save: Firebase not initialized or user not authenticated.");
+            if (!isReadyToSave || !db) {
+                console.warn("Cannot save: Firebase not connected.");
                 return;
             }
             const docRef = getChecklistDocRef();
@@ -215,7 +171,6 @@
             updateData[`status.${itemId}`] = isChecked;
 
             try {
-                // Use setDoc with merge: true to update the specific field without overwriting the whole document
                 await setDoc(docRef, updateData, { merge: true });
                 console.log(`Updated item ${itemId}: ${isChecked}`);
             } catch (e) {
@@ -224,14 +179,13 @@
         }
 
         function startChecklistListener() {
-            if (!isAuthReady || !db) return;
+            if (!isReadyToSave || !db) return;
 
             const docRef = getChecklistDocRef();
             if (!docRef) return;
 
             document.getElementById('loading').classList.remove('hidden');
 
-            // Listen for real-time updates to the job document
             onSnapshot(docRef, (docSnap) => {
                 document.getElementById('loading').classList.add('hidden');
                 let savedStatus = {};
@@ -255,6 +209,9 @@
 
         function renderChecklist(savedStatus) {
             const container = document.getElementById('checklist-renderer');
+            if (container.children.length > 0 && Object.keys(savedStatus).length === 0) {
+                return; 
+            }
             container.innerHTML = ''; // Clear existing content
 
             CHECKLIST_TEMPLATE.forEach(section => {
@@ -280,14 +237,12 @@
                     
                     const checkbox = listItem.querySelector(`#${item.id}`);
                     checkbox.addEventListener('change', (e) => {
-                        // Immediately update the local visual state
                         const textSpan = listItem.querySelector('span');
                         if (e.target.checked) {
                             textSpan.classList.add('line-through', 'text-gray-500');
                         } else {
                             textSpan.classList.remove('line-through', 'text-gray-500');
                         }
-                        // Then update Firestore
                         updateChecklistItem(item.id, e.target.checked);
                     });
 
